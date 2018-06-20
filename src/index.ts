@@ -27,19 +27,25 @@ export interface PeerFinderOptions {
 }
 
 export default class PeerFinder {
-  private peers: Set<string>
-  private excludeHosts: Set<string>
-  private badPeers: Map<string, Date> = new Map()
+  // Settings
+  private publicUrl?: string
   private peersPerQuery: number
   private interval: number
   private badPeerTimeoutHours: number
+
+  // Data structures
+  private peers: Set<string>
+  private excludeHosts: Set<string>
+  private badPeers: Map<string, Date> = new Map()
   
   constructor (options = {} as PeerFinderOptions) {
-    const bootstrapPeers = options.bootstrapPeers || DEFAULT_BOOTSTRAP_PEERS
-    let excludeHosts = options.excludeHosts || DEFAULT_EXCLUDE
+    this.publicUrl = options.publicUrl
     this.peersPerQuery = options.peersPerQuery || DEFAULT_PEERS_PER_QUERY
     this.interval = options.interval || DEFAULT_INTERVAL
     this.badPeerTimeoutHours = options.badPeerTimeoutHours || DEFAULT_BAD_PEER_TIMEOUT_HOURS
+
+    const bootstrapPeers = options.bootstrapPeers || DEFAULT_BOOTSTRAP_PEERS
+    let excludeHosts = options.excludeHosts || DEFAULT_EXCLUDE
     if (options.publicUrl) {
       excludeHosts = [new URL(options.publicUrl).hostname, ...excludeHosts]
     }
@@ -57,8 +63,8 @@ export default class PeerFinder {
     debug('Running PeerFinder... current peer list size: %d', this.peers.size)
     for (const peer of sampleSize([...this.peers], this.peersPerQuery)) {
       try {
-        const response = await axios.get(`${peer}/peers`)
-        this.addPeers(response.data.peers)
+        const discoveredPeers = await this.discoverPeersFrom(peer)
+        this.addPeers(discoveredPeers)
       } catch (err) {
         debug('Peer %s errored with "%s". Marking as bad peer...', peer, err.code)
         this.removePeer(peer)
@@ -84,6 +90,18 @@ export default class PeerFinder {
     this.peers.delete(peer)
   }
 
+  private async discoverPeersFrom(peer: string) {
+    let response
+    if (this.publicUrl) {
+      response = await axios.post(`${peer}/peers/discover`, {
+        peers: [ this.publicUrl ]
+      })
+    } else {
+      response = await axios.get(`${peer}/peers`)
+    }
+    return response.data.peers
+  }
+  
   private addablePeer(peer: string) {
     const hostname = new URL(peer).hostname
     if (this.excludeHosts.has(hostname)) return false
@@ -98,4 +116,4 @@ export default class PeerFinder {
     }
     return true
   }
-  }
+}

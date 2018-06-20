@@ -45,6 +45,23 @@ describe('PeerFinder tests', () => {
     expect(pf.getPeers()).toEqual(bootstrapPeers)
   })
 
+  it('broadcasts the public url to peers if provided', done => {
+    const publicUrl = 'https://codius.awesomehost.com'
+    const options: PeerFinderOptions = {
+      peersPerQuery: 1,
+      publicUrl
+    }
+    const pf = new PeerFinder(options)
+    pf.run()
+    
+    moxios.wait(() => {
+      const request = moxios.requests.mostRecent()
+      expect(request.config.method).toEqual('post')
+      expect(request.config.data).toEqual(JSON.stringify({ 'peers': [ publicUrl ] }))
+      done()
+    })
+  })
+
   it('does not add the public url to peers', () => {
     const publicUrl = 'https://codius.awesomehost.com'
     const options: PeerFinderOptions = {
