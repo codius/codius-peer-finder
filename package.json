@@ -75,6 +75,9 @@
   "bugs": {
     "url": "https://github.com/codius/codius-peer-finder/issues"
   },
+  "files": [
+    "dist/"
+  ],
   "homepage": "https://github.com/codius/codius-peer-finder#readme",
   "devDependencies": {
     "@types/debug": "^0.0.30",
