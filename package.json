@@ -2,8 +2,8 @@
   "name": "codius-peer-finder",
   "version": "0.0.3",
   "description": "Peer Discovery for the Codius Network",
-  "main": "dist/src/index.js",
-  "typings": "dist/src/index.d.ts",
+  "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
   "scripts": {
     "lint": "tslint -t codeFrame 'src/**/*.ts' 'test/**/*.ts'",
     "prebuild": "rm -rf dist",
