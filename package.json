@@ -1,6 +1,6 @@
 {
   "name": "codius-peer-finder",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "Peer Discovery for the Codius Network",
   "main": "dist/src/index.js",
   "typings": "dist/src/index.d.ts",
