@@ -99,7 +99,7 @@ export default class PeerFinder {
 
   addPeers(peers: string[]) {
     for (const peer of peers) {
-      if (this.addablePeer(peer)) {
+      if (!this.peers.has(peer) && this.addablePeer(peer)) {
         this.peers.add(peer)
         this.addPeerCallback(peer)
       }
