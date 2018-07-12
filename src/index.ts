@@ -97,6 +97,10 @@ export default class PeerFinder {
     return [...this.peers]
   }
 
+  getBadPeerList() {
+    return [...this.badPeers.keys()]
+  }
+
   addPeers(peers: string[]) {
     for (const peer of peers) {
       if (!this.peers.has(peer) && this.addablePeer(peer)) {
