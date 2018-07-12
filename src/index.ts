@@ -4,7 +4,7 @@ import createDebug from 'debug'
 
 const debug = createDebug('PeerFinder')
 
-const DEFAULT_BAD_PEER_TIMEOUT_HOURS = 24
+const DEFAULT_BAD_PEER_TIMEOUT_SECONDS = 24 * 60 * 60
 const DEFAULT_PEERS_PER_QUERY = 10
 const DEFAULT_INTERVAL = 15000
 export const DEFAULT_EXCLUDE = [
@@ -29,7 +29,7 @@ export interface PeerFinderOptions {
   excludeHosts?: string[]
   peersPerQuery?: number
   interval?: number
-  badPeerTimeoutHours?: number
+  badPeerTimeoutSeconds?: number
   addPeerCallback?: (peer: string) => void
   removePeerCallback?: (peer: string) => void
 }
@@ -39,7 +39,7 @@ export default class PeerFinder {
   private publicUrl?: string
   private peersPerQuery: number
   private interval: number
-  private badPeerTimeoutHours: number
+  private badPeerTimeoutSeconds: number
 
   // Callbacks
   private addPeerCallback: (peer: string) => void
@@ -54,8 +54,8 @@ export default class PeerFinder {
     this.publicUrl = options.publicUrl
     this.peersPerQuery = options.peersPerQuery || DEFAULT_PEERS_PER_QUERY
     this.interval = options.interval || DEFAULT_INTERVAL
-    this.badPeerTimeoutHours =
-      options.badPeerTimeoutHours || DEFAULT_BAD_PEER_TIMEOUT_HOURS
+    this.badPeerTimeoutSeconds =
+      options.badPeerTimeoutSeconds || DEFAULT_BAD_PEER_TIMEOUT_SECONDS
 
     const bootstrapPeers = options.bootstrapPeers || DEFAULT_BOOTSTRAP_PEERS
     let excludeHosts = options.excludeHosts || DEFAULT_EXCLUDE
@@ -110,9 +110,11 @@ export default class PeerFinder {
     }
   }
 
-  removePeer(peer: string) {
+  removePeer(peer: string, timeoutSeconds?: number) {
+    const timeout = timeoutSeconds ? timeoutSeconds : this.badPeerTimeoutSeconds
+
     const expireTime = new Date()
-    expireTime.setHours(expireTime.getHours() + this.badPeerTimeoutHours)
+    expireTime.setSeconds(expireTime.getSeconds() + timeout)
     this.badPeers.set(peer, expireTime)
     this.peers.delete(peer)
     this.removePeerCallback(peer)

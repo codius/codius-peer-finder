@@ -20,10 +20,10 @@ describe('PeerFinder tests', () => {
     pf.run()
 
     moxios.stubRequest(/.*\/peers$/, { status: 200 })
-    moxios.wait((() => {
+    moxios.wait(() => {
       expect(moxios.requests.count()).toBe(3)
       done()
-    }))
+    })
   })
 
   it('starts with bootstrap hosts', () => {
@@ -53,11 +53,13 @@ describe('PeerFinder tests', () => {
     }
     const pf = new PeerFinder(options)
     pf.run()
-    
+
     moxios.wait(() => {
       const request = moxios.requests.mostRecent()
       expect(request.config.method).toEqual('post')
-      expect(request.config.data).toEqual(JSON.stringify({ 'peers': [ publicUrl ] }))
+      expect(request.config.data).toEqual(
+        JSON.stringify({ peers: [publicUrl] })
+      )
       done()
     })
   })
@@ -75,7 +77,7 @@ describe('PeerFinder tests', () => {
   it('adds hosts from queried peers', done => {
     const newHost = 'https://codius.newhost.com'
     const options: PeerFinderOptions = {
-      peersPerQuery: 1,
+      peersPerQuery: 1
     }
     const pf = new PeerFinder(options)
     pf.run()
@@ -83,15 +85,13 @@ describe('PeerFinder tests', () => {
     moxios.stubRequest(/.*\/peers$/, {
       status: 200,
       response: {
-        'peers': [
-          newHost
-        ]
+        peers: [newHost]
       }
     })
     moxios.wait(() => {
       expect(pf.getPeers()).toContain(newHost)
       done()
-    })    
+    })
   })
 
   it('deduplicates found peers', done => {
@@ -102,7 +102,7 @@ describe('PeerFinder tests', () => {
     const newHost = 'https://codius.newhost.com'
     const options: PeerFinderOptions = {
       bootstrapPeers,
-      peersPerQuery: 2,
+      peersPerQuery: 2
     }
     const pf = new PeerFinder(options)
     pf.run()
@@ -110,36 +110,45 @@ describe('PeerFinder tests', () => {
     moxios.stubRequest(/.*\/peers$/, {
       status: 200,
       response: {
-        'peers': [
-          newHost
-        ]
+        peers: [newHost]
       }
     })
     moxios.wait(() => {
-      const foundPeers = pf.getPeers().filter(peer => !bootstrapPeers.includes(peer))
+      const foundPeers = pf
+        .getPeers()
+        .filter(peer => !bootstrapPeers.includes(peer))
       expect(foundPeers).toEqual([newHost])
       done()
-    })    
+    })
   })
 
   it('removes a peer if they 404', done => {
     const bootstrapPeers = ['https://codius.testhost.com']
     const options: PeerFinderOptions = {
       bootstrapPeers,
-      peersPerQuery: 1,
+      peersPerQuery: 1
     }
     const pf = new PeerFinder(options)
     pf.run()
 
     moxios.wait(() => {
       const request = moxios.requests.mostRecent()
-      request.respondWith({
-        status: 404
-      }).then((() => {
-        expect(pf.getPeers().length).toEqual(0)
-        done()
-      }))
+      request
+        .respondWith({
+          status: 404
+        })
+        .then(() => {
+          expect(pf.getPeers().length).toEqual(0)
+          done()
+        })
     })
+  })
+
+  it('keeps track of removed peers', () => {
+    const badHost = 'https://codius.badhost.com'
+    const pf = new PeerFinder()
+    pf.removePeer(badHost)
+    expect(pf.getBadPeerList()).toContain(badHost)
   })
 
   it('does not add a peer if they have been removed', () => {
@@ -164,20 +173,38 @@ describe('PeerFinder tests', () => {
     moxios.wait(() => {
       expect(moxios.requests.count()).toBe(2)
       done()
-    }, 110)    
-
+    }, 110)
   })
 
   it('allows bad peers to be re-added after they have expired', () => {
     const poorHost = 'https://codius.poorhost.com'
     const options: PeerFinderOptions = {
-      badPeerTimeoutHours: 1
+      badPeerTimeoutSeconds: 3600
     }
     const pf = new PeerFinder(options)
     pf.removePeer(poorHost)
 
     const theFuture = new Date()
     theFuture.setHours(theFuture.getHours() + 2)
+    tk.travel(theFuture)
+
+    pf.addPeers([poorHost])
+    expect(pf.getPeers()).toContain(poorHost)
+  })
+
+  it('allows bad peers to be re-added after a custom timeout has expired', () => {
+    const poorHost = 'https://codius.poorhost.com'
+    const options: PeerFinderOptions = {
+      badPeerTimeoutSeconds: 3600
+    }
+    const pf = new PeerFinder(options)
+    const timeoutSeconds = 70
+    pf.removePeer(poorHost, timeoutSeconds)
+    pf.addPeers([poorHost])
+    expect(pf.getPeers()).not.toContain(poorHost)
+
+    const theFuture = new Date()
+    theFuture.setMinutes(theFuture.getMinutes() + 2)
     tk.travel(theFuture)
 
     pf.addPeers([poorHost])
