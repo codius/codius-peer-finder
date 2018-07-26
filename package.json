@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
   "scripts": {
-    "lint": "tslint -t codeFrame 'src/**/*.ts' 'test/**/*.ts'",
+    "lint": "tslint -t codeFrame -c tslint.json -p tsconfig.json",
     "prebuild": "rm -rf dist",
     "build": "tsc --module commonjs",
     "test": "jest",

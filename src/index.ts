@@ -63,8 +63,8 @@ export default class PeerFinder {
       excludeHosts = [new URL(options.publicUrl).hostname, ...excludeHosts]
     }
 
-    this.addPeerCallback = options.addPeerCallback || function() {}
-    this.removePeerCallback = options.removePeerCallback || function() {}
+    this.addPeerCallback = options.addPeerCallback || (() => undefined)
+    this.removePeerCallback = options.removePeerCallback || (() => undefined)
 
     this.peers = new Set(bootstrapPeers)
     this.excludeHosts = new Set(excludeHosts)
